@@ -1,0 +1,85 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  photos  Photo[]
+  reports Report[]
+  
+  @@map("users")
+}
+
+model Photo {
+  id          String   @id @default(cuid())
+  filename    String
+  originalName String
+  mimeType    String
+  size         Int
+  path         String
+  description  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reportPhotos ReportPhoto[]
+  
+  @@map("photos")
+}
+
+model Report {
+  id        String   @id @default(cuid())
+  title     String
+  date      DateTime
+  status    ReportStatus @default(DRAFT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reportPhotos  ReportPhoto[]
+  
+  @@map("reports")
+}
+
+model ReportPhoto {
+  id       String @id @default(cuid())
+  order    Int    @default(0)
+  
+  // Relations
+  reportId String
+  report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  photoId  String
+  photo    Photo  @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  
+  @@unique([reportId, photoId])
+  @@map("report_photos")
+}
+
+enum ReportStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
